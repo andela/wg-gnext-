@@ -33,7 +33,7 @@ from sortedm2m.fields import SortedManyToManyField
 
 from wger.core.models import DaysOfWeek, RepetitionUnit, WeightUnit
 from wger.exercises.models import Exercise
-from wger.manager.helpers import reps_smart_text
+from wger.manager.helpers import reps_smart_text, periodization, MICROCYCLE, MESOCYLCLE, MACROCYCLE
 from wger.utils.cache import (cache_mapper, reset_workout_canonical_form,
                               reset_workout_log)
 from wger.utils.fields import Html5DateField
@@ -245,6 +245,11 @@ class Schedule(models.Model):
     '''A flag indicating whether the schedule is active
      (needed for dashboard)'''
 
+    use_periodization = models.BooleanField(default=False,
+                                            help_text="Divide your annual training plan into "
+                                                      "specific time blocks. "
+                                                      "eg(microcycle, mesocycle, macrocycle)")
+
     is_loop = models.BooleanField(
         verbose_name=_('Is a loop'),
         default=False,
@@ -340,9 +345,14 @@ class ScheduleStep(models.Model):
         verbose_name=_('Duration'),
         help_text=_('The duration in weeks'),
         default=4,
-        validators=[MinValueValidator(1),
-                    MaxValueValidator(25)])
+        validators=[MinValueValidator(periodization.get_max(MICROCYCLE)), MaxValueValidator(periodization.get_max(MACROCYCLE))])
     '''The duration in weeks'''
+
+    is_periodized = models.BooleanField(default=False,
+                                        help_text=_('indicates whether the schedule '
+                                                  'step was created as a cycle in periodization'))
+    '''A flag to indicate if schedule step is set using periodization'''
+
 
     order = models.IntegerField(verbose_name=_('Order'), default=1)
 

@@ -14,7 +14,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with Workout Manager.  If not, see <http://www.gnu.org/licenses/>.
-
+import collections
 import datetime
 from calendar import HTMLCalendar
 
@@ -29,6 +29,12 @@ from wger.utils.helpers import normalize_decimal
 
 from wger.utils.pdf import styleSheet
 
+
+MICROCYCLE, MESOCYLCLE, MACROCYCLE = 'microcycle', 'mesocycle', 'macrocycle'
+
+PERIODIZATION = collections.namedtuple('PERIODIZATION', [MICROCYCLE, MESOCYLCLE, MACROCYCLE])
+
+PERIODIZATION_DURATIONS = PERIODIZATION((0, 1), (2, 6), (7, 52))
 
 def render_workout_day(day,
                        nr_of_weeks=7,
@@ -396,3 +402,53 @@ class WorkoutCalendar(HTMLCalendar):
         '''
         return '<td class="{0}" style="vertical-align: middle;">{1}</td>'\
             .format(cssclass, body)
+
+
+class Periodization(object):
+    '''
+    Contains helper methods that return maximum and minimum months in
+    periodization cycles.
+    '''
+    def __init__(self):
+        self.periodization = PERIODIZATION_DURATIONS
+        self.default = PERIODIZATION_DURATIONS
+
+    def get_min(self, cycle):
+        '''
+        Return minimum number months for specified periodization cycle.
+        '''
+
+        return getattr(
+            self.periodization,
+            cycle,
+            getattr(PERIODIZATION_DURATIONS, MICROCYCLE))[1]
+
+    def get_max(self, cycle):
+        '''
+        Return maximum number of months for specified periodization cycle.
+        '''
+
+        return getattr(
+            self.periodization,
+            cycle,
+            getattr(PERIODIZATION_DURATIONS, MACROCYCLE))[1]
+
+
+    def translate(self, duration):
+        '''
+        Checks if provided duration falls in periodization cycles.
+        '''
+        if duration > self.get_max(MACROCYCLE) or duration < self.get_max(MICROCYCLE):
+            return '%s Week(s)' % duration
+
+        if duration == 1:
+            return 'Microcycle (1 Week)'
+
+        if duration in range(self.get_min(MESOCYLCLE), (self.get_max(MESOCYLCLE) + 1)):
+            return 'Mesocycle (2-6 Weeks)'
+
+        if duration in range(self.get_min(MACROCYCLE), (self.get_max(MACROCYCLE) + 1)):
+            return 'Macrocycle (1 year)'
+
+# instantiate periodization class to ease usage whenever need be.
+periodization = Periodization()

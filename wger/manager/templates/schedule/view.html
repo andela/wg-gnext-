@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load staticfiles wger_extras %}
+{% load periodization %}
 
 {#           #}
 {# Opengraph #}
@@ -75,6 +76,17 @@
         <td>
             {% if schedule.is_active %}
                 <span class="{% fa_class 'check' %}"></span>
+            {% else %}
+                <span class="{% fa_class 'times' %}"></span>
+            {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <th>{% trans "Uses Periodization" %}</th>
+        <td>
+            {% if schedule.use_periodization %}
+                <span class="{% fa_class 'check' %}"></span>
+                <small>{% trans "This schedule uses periodization training cycle" %}</small>
             {% else %}
                 <span class="{% fa_class 'times' %}"></span>
             {% endif %}
@@ -176,18 +188,24 @@
 {% for step in schedule.schedulestep_set.select_related %}
 {% with step_dates=step.get_dates %}
 <div class="row">
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h4 class="panel-title">
-                    {% blocktrans count weeks=step.duration %}{{ weeks }} Week
-                    {% plural %}{{ weeks }} Weeks
-                    {% endblocktrans %}
-                </h4>
-
                 {% if active_workout == step %}
-                    <span class="label label-info">{% trans "active" %}</span>
+                    <span class="label label-info active-step">{% trans "active" %}</span>
+                     <br/><br/>
                 {% endif  %}
+                <h4 class="panel-title">
+                {% if step.is_periodized %}
+                    <label class="label label-success">{{ step.duration|perioditize }}</label>
+                {% else %}
+                    <label class="label label-default">
+                    {% blocktrans count weeks=step.duration %}
+                        {{ weeks }} Week {% plural %}{{ weeks }} Weeks
+                    {% endblocktrans %}
+                    </label>
+                {% endif %}
+                </h4>
             </div>
             <div class="panel-body">
                 <span>{{step_dates.0}} <br> {{step_dates.1}}</span>
@@ -202,7 +220,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-9">
+    <div class="col-md-8">
         {% for day in step.workout.canonical_representation.day_list %}
         <div id="div-day-{{ day.obj.id }}">
             {% render_day day.obj False %}
